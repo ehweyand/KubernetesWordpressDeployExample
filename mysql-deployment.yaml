@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment # Configuração escolhida - para deploy
+metadata:
+  name: mysql-deployment # Nome do deploy
+spec:
+  replicas: 1 # Quantas réplicas de pods utilizar no deploy 
+  selector:
+    matchLabels:
+      app: mysql-deployment # Define qual nome que será utilizado para fazer relação com outras configurações. Ex: Deploy com Service
+  template:
+    metadata:
+      labels:
+        app: mysql-deployment # Nome do template
+    spec: # Começa as configurações dos pods. ReplicaSet usará para criar as configurações dos pods.
+      containers:
+      - name: mysql-image
+        image: mysql:5.6
+        resources: # Recursos - Importante para quando a aplicação começar a escalar.
+          limits:
+            memory: "512Mi" # Mb de memória
+            cpu: "500m" # Mhz
+        ports:
+        - containerPort: 3306
+        env: # Variáveis de ambiente para o container
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef: # Utiliza a senha criptografada vindo do arquivo de secret
+                name: mysql-secret
+                key: password
+        volumeMounts: # Configurando o volume PVC
+          - name: mysql-volume
+            mountPath: /var/lib/mysql
+      volumes: # Configuração para os volumes dos containers
+        - name: mysql-volume
+          persistentVolumeClaim:
+            claimName: mysql-pvc
